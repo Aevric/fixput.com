@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixPut ♥ Hello I am Here!</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <!-- 引入Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- 配置Tailwind自定义主题 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      /* 简化阴影效果，减少渲染负担 */
+      .card-shadow {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      /* 优化过渡效果，使用更高效的属性 */
+      .card-transition {
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+      /* 简化动画，减少性能消耗 */
+      .float-animation {
+        animation: float 8s ease-in-out infinite;
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+      .pulse-subtle {
+        animation: pulse 5s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.85; }
+      }
+      .hover-arrow {
+        opacity: 0;
+        transform: translateX(0);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .card-hover:hover .hover-arrow {
+        opacity: 1;
+        transform: translateX(3px);
+      }
+      .header-shadow {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+  <!-- 优化后的标题区 -->
+  <header class="py-6 px-4 bg-white header-shadow mb-6 relative">
+    <div class="container mx-auto text-center relative z-10">
+      <div class="inline-block mb-3 bg-primary/10 rounded-full p-1.5">
+        <!-- <i class="fa fa-compass text-primary text-xl"></i> -->
+        <img src="favicon.png" alt="www.fixput.com" width="80" height="80" loading="lazy" decoding="async">
+      </div>
+      <h1 class="text-[clamp(1.6rem,4vw,2.4rem)] font-bold text-gray-800 mb-2 tracking-tight">
+        花径不曾缘客扫 · 蓬门今始为君开
+      </h1>
+      <p id="hitokoto" class="text-gray-600 max-w-md mx-auto pulse-subtle text-sm md:text-base">
+          <a href="#" id="hitokoto_text">白首书千卷，朱颜酒一杯</a>
+        </p>
+        <script>
+          fetch('https://v1.hitokoto.cn')
+            .then(response => response.json())
+            .then(data => {
+              const hitokoto = document.querySelector('#hitokoto_text')
+              hitokoto.href = `https://hitokoto.cn/?uuid=${data.uuid}`
+              hitokoto.innerText = data.hitokoto
+            })
+            .catch(console.error)
+        </script>
+
+      <!-- 简化装饰元素 -->
+      <div class="hidden md:block absolute -top-8 -right-8 w-32 h-32 bg-primary/5 rounded-full"></div>
+      <div class="hidden md:block absolute -bottom-8 -left-8 w-24 h-24 bg-primary/5 rounded-full"></div>
+    </div>
+    
+    <!-- 优化惊喜元素 -->
+    <div id="surprise-icons" class="absolute inset-0 pointer-events-none overflow-hidden">
+      <i class="fa fa-heart text-pink-400 absolute opacity-0" style="font-size: 1.2rem;"></i>
+      <i class="fa fa-lightbulb-o text-yellow-500 absolute opacity-0" style="font-size: 1rem;"></i>
+      <i class="fa fa-leaf text-green-400 absolute opacity-0" style="font-size: 0.8rem;"></i>
+      <i class="fa fa-paper-plane text-blue-400 absolute opacity-0" style="font-size: 1rem;"></i>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 pb-8">
+    <!-- 卡片网格 - 优化了网格间距和布局 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+      
+      <!-- 卡片1 -->
+      <a href="guess.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">猜数字</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">在0-100中随机猜数字，猜中了有惊喜哦~</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+      
+      <!-- 卡片2 -->
+      <a href="sudoku.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">数独</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">我们的目标是，用1到9的数字填补所有空白</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+      
+      <!-- 卡片3 -->
+      <a href="fortune.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">好运来</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">祝你一切安好，万事顺遂</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+      
+      <!-- 卡片4 -->
+      <a href="javascript:void(0);" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group device-redirect" data-base-href="spark">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">星空烟火</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">是谁把光阴剪成了烟花，演绎那一瞬间的繁华</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+      
+      <!-- 卡片5 -->
+      <a href="flipBrand.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">翻牌子</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">快一点，找出相同或相似的图案吧</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+      
+      <!-- 卡片6 -->
+      <a href="date.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">日期计算</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">帮我算出出生至今一共活了多少天</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+      
+      <!-- 卡片7 -->
+      <a href="check.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">Emoji</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">找到那个你最喜欢的小表情吧</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+      
+      <!-- 卡片8 -->
+      <a href="calc.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">收益计算</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">恭喜发财，财源滚滚，日进斗金的你呀</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+
+      <!-- 卡片9 -->
+      <a href="tarot.html" target="_blank" class="block bg-white rounded-lg card-shadow border border-gray-100 card-transition card-hover p-4 group">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors">塔罗占卜</h3>
+            <p class="text-gray-500 text-sm group-hover:text-gray-600 transition-colors">来算算桃花什么时候开吧</p>
+          </div>
+          <i class="fa fa-arrow-right text-primary hover-arrow mt-1"></i>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <footer class="py-2 border-t border-gray-100">
+    <div class="container mx-auto px-4">
+      <a href="https://beian.miit.gov.cn/">
+        <p class="text-center text-gray-500 text-xs transition-colors hover:text-primary">
+          Fixput &copy; 2025 京ICP备2024055092号-2
+        </p>
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const links = document.querySelectorAll('.device-redirect');
+      links.forEach(link => {
+        link.addEventListener('click', function () {
+          const baseHref = this.getAttribute('data-base-href');
+          redirectBasedOnDevice(baseHref);
+        });
+      });
+    });
+
+    function redirectBasedOnDevice(baseHref) {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /mobile|android|iphone|ipad|ipod/i.test(userAgent);
+      const extension = isMobile ? '_m.html' : '.html';
+
+      window.location.href = baseHref + extension;
+    }
+  </script>
+
+  <script>
+    // 优化惊喜元素的JavaScript，减少DOM操作
+    document.addEventListener('DOMContentLoaded', () => {
+      const icons = document.querySelectorAll('#surprise-icons i');
+      let animationActive = false;
+      
+      // 优化随机显示函数，减少重绘
+      function showRandomIcon() {
+        if (animationActive) return;
+        
+        animationActive = true;
+        const randomIndex = Math.floor(Math.random() * icons.length);
+        const icon = icons[randomIndex];
+        
+        // 重置状态
+        icon.style.opacity = '0';
+        icon.style.transition = 'none';
+        
+        // 随机位置
+        const top = Math.floor(Math.random() * 80) + 10;
+        const left = Math.floor(Math.random() * 80) + 10;
+        icon.style.top = `${top}%`;
+        icon.style.left = `${left}%`;
+        
+        // 触发重排后再应用过渡
+        void icon.offsetWidth;
+        
+        // 淡入淡出动画
+        icon.style.transition = 'opacity 0.5s ease-in-out';
+        icon.style.opacity = '0.7';
+        
+        setTimeout(() => {
+          icon.style.opacity = '0';
+          setTimeout(() => {
+            animationActive = false;
+          }, 500);
+        }, 2000);
+      }
+      
+      // 延长动画间隔，减少CPU使用
+      setInterval(showRandomIcon, 8000);
+      
+      // 初始显示一个
+      setTimeout(showRandomIcon, 1500);
+      
+      // 双击标题区的惊喜效果 - 添加节流控制
+      const header = document.querySelector('header');
+      let lastClick = 0;
+      
+      header.addEventListener('dblclick', () => {
+        const now = Date.now();
+        if (now - lastClick < 1500) return; // 防止过快连续点击
+        lastClick = now;
+        
+        icons.forEach((icon, index) => {
+          setTimeout(() => {
+            icon.style.opacity = '0.8';
+            icon.style.transition = 'opacity 0.3s ease-in-out';
+            
+            setTimeout(() => {
+              icon.style.opacity = '0';
+            }, 800);
+          }, index * 200);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
+    

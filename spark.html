@@ -1,0 +1,796 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星空烟花秀</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1a1a2e',
+                        secondary: '#16213e',
+                        accent: '#e94560',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+
+            .star {
+                position: absolute;
+                background-color: white;
+                border-radius: 50%;
+                animation: twinkle 2s infinite ease-in-out;
+            }
+
+            .firework {
+                position: absolute;
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                pointer-events: none;
+            }
+
+            .particle {
+                position: absolute;
+                border-radius: 50%;
+                pointer-events: none;
+            }
+
+            .meteor {
+                position: absolute;
+                background: linear-gradient(45deg, white, transparent);
+                width: 1px;
+                height: 1px;
+                transform-origin: 0 0;
+                pointer-events: none;
+            }
+
+            .constellation-line {
+                position: absolute;
+                background-color: rgba(255, 255, 255, 0.1);
+                transform-origin: 0 0;
+                pointer-events: none;
+            }
+
+            .nebula {
+                position: absolute;
+                border-radius: 50%;
+                filter: blur(40px);
+                pointer-events: none;
+                animation: flow 60s infinite linear; /* 添加流动动画 */
+            }
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes flow {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(50px, 50px); /* 星云流动的偏移量 */
+            }
+        }
+    </style>
+</head>
+
+<body class="m-0 p-0 bg-black overflow-hidden text-white font-sans">
+    <div id="stars-container" class="fixed inset-0 z-0"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const starsContainer = document.getElementById('stars-container');
+            const colors = ['#FF5E5E', '#FFD166', '#06D6A0', '#118AB2', '#9381FF', '#FF9B71', '#E07A5F', '#F72585', '#7209B7', '#3A0CA3'];
+            const maxFireworks = 3; // 同时最大烟花数
+            let activeFireworks = 0; // 当前活跃烟花数
+
+            // 创建星星
+            function createStars() {
+                const count = Math.floor(window.innerWidth * window.innerHeight / 8000); // 星星密度
+
+                for (let i = 0; i < count; i++) {
+                    const star = document.createElement('div');
+                    star.classList.add('star');
+
+                    // 设置位置
+                    const x = Math.random() * 100;
+                    const y = Math.random() * 100;
+
+                    // 设置大小
+                    const size = Math.random() * 2 + 1;
+
+                    // 设置延迟和持续时间
+                    const delay = Math.random() * 5;
+                    const duration = 1 + Math.random() * 3; // 控制闪烁速度
+
+                    star.style.left = `${x}%`;
+                    star.style.top = `${y}%`;
+                    star.style.width = `${size}px`;
+                    star.style.height = `${size}px`;
+                    star.style.animationDelay = `${delay}s`;
+                    star.style.animationDuration = `${duration}s`;
+
+                    // 25%的概率是大星星
+                    if (Math.random() < 0.25) {
+                        star.style.width = `${size * 2}px`;
+                        star.style.height = `${size * 2}px`;
+                        star.style.boxShadow = `0 0 6px 2px rgba(255, 255, 255, 0.6)`;
+
+                        // 10%的概率是闪烁且有脉冲效果的星星
+                        if (Math.random() < 0.4) {
+                            star.style.animationName = 'twinkle, pulse';
+                            star.style.animationTimingFunction = 'ease-in-out, ease-in-out';
+                            star.style.animationDuration = `${duration}s, ${3 + Math.random() * 3}s`;
+                        }
+                    }
+
+                    // 5%的概率是彩色星星
+                    if (Math.random() < 0.05) {
+                        const colors = ['#9381FF', '#06D6A0', '#FFD166', '#FF5E5E'];
+                        const color = colors[Math.floor(Math.random() * colors.length)];
+                        star.style.backgroundColor = color;
+                        star.style.boxShadow = `0 0 6px 2px rgba(${hexToRgb(color)}, 0.6)`;
+                    }
+
+                    starsContainer.appendChild(star);
+                }
+
+                // 创建星座
+                createConstellations();
+
+                // 创建星云
+                createNebulas();
+            }
+
+            // 创建星座
+            function createConstellations() {
+                const constellationCount = 3 + Math.floor(Math.random() * 2); // 3-4个星座
+
+                for (let i = 0; i < constellationCount; i++) {
+                    // 筛选大星星作为星座的点
+                    const stars = Array.from(starsContainer.querySelectorAll('.star')).filter(star => {
+                        // 只选较大的星星作为星座点
+                        return parseFloat(star.style.width) > 1.5;
+                    });
+
+                    if (stars.length < 5) continue; // 如果没有足够的星星，跳过
+
+                    // 随机选取5-8个星星作为一个星座
+                    const constellationSize = 5 + Math.floor(Math.random() * 3);
+                    const constellationStars = [];
+
+                    for (let j = 0; j < constellationSize; j++) {
+                        const randomIndex = Math.floor(Math.random() * stars.length);
+                        constellationStars.push(stars[randomIndex]);
+                        stars.splice(randomIndex, 1); // 避免重复选取
+                    }
+
+                    // 连接星座线
+                    for (let j = 0; j < constellationStars.length - 1; j++) {
+                        const line = document.createElement('div');
+                        line.classList.add('constellation-line');
+
+                        const star1 = constellationStars[j];
+                        const star2 = constellationStars[j + 1];
+
+                        // 获取星星位置
+                        const rect1 = star1.getBoundingClientRect();
+                        const rect2 = star2.getBoundingClientRect();
+
+                        // 计算线的角度和长度
+                        const dx = rect2.left - rect1.left;
+                        const dy = rect2.top - rect1.top;
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                        line.style.left = `${rect1.left}px`;
+                        line.style.top = `${rect1.top}px`;
+                        line.style.width = `${length}px`;
+                        line.style.height = '1px';
+                        line.style.transform = `rotate(${angle}deg)`;
+
+                        // 设置透明度
+                        const opacity = 0.05 + Math.random() * 0.1;
+                        line.style.backgroundColor = `rgba(255, 255, 255, ${opacity})`;
+
+                        starsContainer.appendChild(line);
+                    }
+                }
+            }
+
+            // 创建星云
+            function createNebulas() {
+                const nebulaCount = 2 + Math.floor(Math.random() * 3); // 2-4个星云
+
+                for (let i = 0; i < nebulaCount; i++) {
+                    const nebula = document.createElement('div');
+                    nebula.classList.add('nebula');
+
+                    // 设置位置和大小
+                    const x = Math.random() * 100;
+                    const y = Math.random() * 100;
+                    const size = 300 + Math.random() * 500;
+
+                    // 设置彩色
+                    const colors = [
+                        'rgba(101, 31, 255, 0.15)',
+                        'rgba(31, 140, 255, 0.15)',
+                        'rgba(31, 255, 200, 0.15)',
+                        'rgba(255, 31, 130, 0.15)'
+                    ];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+
+                    nebula.style.left = `${x}%`;
+                    nebula.style.top = `${y}%`;
+                    nebula.style.width = `${size}px`;
+                    nebula.style.height = `${size}px`;
+                    nebula.style.background = `radial-gradient(ellipse at center, ${color} 0%,rgba(0, 0, 0, 0) 70%)`;
+
+                    // 添加流动动画
+                    const flowDuration = 60 + Math.random() * 40; // 60-100秒
+                    nebula.style.animationDuration = `${flowDuration}s`;
+                    nebula.style.animationDelay = `${Math.random() * 20}s`;
+
+                    starsContainer.appendChild(nebula);
+                }
+            }
+
+            // 创建流星
+            function createMeteor() {
+                if (document.hidden) return; // 页面不可见时不创建流星
+
+                const meteor = document.createElement('div');
+                meteor.classList.add('meteor');
+
+                // 从右侧随机高度开始
+                const startX = window.innerWidth + 10;
+                const startY = Math.random() * window.innerHeight * 0.6; // 只在屏幕上半部分出现
+
+                // 设置长度和角度
+                const length = 100 + Math.random() * 200;
+                const angle = 30 + Math.random() * 30; // 流星角度范围
+
+                // 计算终点
+                const endX = startX - length * Math.cos(angle * Math.PI / 180);
+                const endY = startY + length * Math.sin(angle * Math.PI / 180);
+
+                // 设置流星样式
+                meteor.style.left = `${startX}px`;
+                meteor.style.top = `${startY}px`;
+                meteor.style.width = `${length}px`;
+                meteor.style.height = '1px';
+                meteor.style.transform = `rotate(${angle}deg)`;
+
+                // 设置透明度
+                const opacity = 0.6 + Math.random() * 0.4;
+                meteor.style.opacity = opacity;
+
+                starsContainer.appendChild(meteor);
+
+                // 设置动画
+                const duration = 800 + Math.random() * 400; // 0.8-1.2秒
+
+                const animation = meteor.animate([
+                    { transform: `translate(0, 0) rotate(${angle}deg)`, opacity: opacity },
+                    { transform: `translate(${-length}px, ${length * Math.tan(angle * Math.PI / 180)}px) rotate(${angle}deg)`, opacity: 0 }
+                ], {
+                    duration: duration,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+
+                // 动画结束后移除流星
+                animation.onfinish = () => meteor.remove();
+
+                // 定时创建下一个流星
+                setTimeout(createMeteor, 2000 + Math.random() * 8000); // 2-10秒后创建下一个流星
+            }
+
+            // 创建烟花
+            function createFirework(x, y) {
+                // 限制同时最大烟花数
+                if (activeFireworks >= maxFireworks) return;
+                activeFireworks++;
+
+                const firework = document.createElement('div');
+                firework.classList.add('firework');
+
+                // 烟花发射动画
+                firework.style.left = `${x}px`;
+                firework.style.bottom = `0px`;
+                firework.style.width = '6px';
+                firework.style.height = '6px';
+                firework.style.backgroundColor = 'white';
+                firework.style.boxShadow = '0 0 10px 2px rgba(255, 255, 255, 0.7)';
+
+                starsContainer.appendChild(firework);
+
+                // 烟花上升高度，随机在50%-80%屏幕高度之间
+                const height = (0.5 + Math.random() * 0.3) * window.innerHeight;
+
+                // 烟花上升动画
+                const animationDuration = 0.6 + Math.random() * 0.4; // 上升速度
+                firework.animate([
+                    { bottom: '0px' },
+                    { bottom: `${height}px` }
+                ], {
+                    duration: animationDuration * 1000,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+
+                // 烟花爆炸
+                setTimeout(() => {
+                    firework.remove();
+                    activeFireworks--;
+
+                    // 随机选择爆炸类型
+                    const explosionTypes = [
+                        explodeRadial,
+                        explodeRing,
+                        explodeSphere,
+                        explodeHeart,
+                        explodeSpiral
+                    ];
+
+                    const randomType = explosionTypes[Math.floor(Math.random() * explosionTypes.length)];
+                    randomType(x, window.innerHeight - height);
+
+                    // 有一定概率触发二次爆炸效果
+                    if (Math.random() > 0.5) {
+                        setTimeout(() => {
+                            const anotherType = explosionTypes[Math.floor(Math.random() * explosionTypes.length)];
+                            anotherType(x, window.innerHeight - height);
+                        }, 100 + Math.random() * 200);
+                    }
+
+                    // 随机延时后在附近创建第二个烟花
+                    if (Math.random() > 0.6) {
+                        const offsetX = x + (Math.random() * 100 - 50);
+                        createFirework(offsetX, window.innerHeight);
+                    }
+                }, animationDuration * 1000);
+            }
+
+            // 径向爆炸效果
+            function explodeRadial(x, y) {
+                const particleCount = 120 + Math.floor(Math.random() * 80);
+                const color = getRandomColor();
+
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+
+                    // 设置粒子大小
+                    const size = 1 + Math.random() * 3;
+
+                    // 设置粒子方向和速度
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 3 + Math.random() * 7;
+
+                    // 设置粒子生命周期
+                    const life = 0.7 + Math.random() * 1.0;
+
+                    particle.style.left = `${x}px`;
+                    particle.style.top = `${y}px`;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.backgroundColor = color;
+                    particle.style.boxShadow = `0 0 ${size * 2}px ${size}px rgba(${hexToRgb(color)}, 0.6)`;
+
+                    starsContainer.appendChild(particle);
+
+                    // 设置粒子动画
+                    const animation = particle.animate([
+                        {
+                            transform: `translate(0, 0)`,
+                            opacity: 1
+                        },
+                        {
+                            transform: `translate(${Math.cos(angle) * speed * 30}px, ${Math.sin(angle) * speed * 30}px)`,
+                            opacity: 0
+                        }
+                    ], {
+                        duration: life * 1000,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    });
+
+                    // 动画结束后移除粒子
+                    animation.onfinish = () => particle.remove();
+                }
+            }
+
+            // 环形爆炸效果
+            function explodeRing(x, y) {
+                const particleCount = 140 + Math.floor(Math.random() * 100);
+                const color = getRandomColor();
+                const ringRadius = 30 + Math.random() * 20;
+
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+
+                    // 设置粒子大小
+                    const size = 1 + Math.random() * 2;
+
+                    // 环形分布
+                    const angle = (i / particleCount) * Math.PI * 2;
+                    const startX = Math.cos(angle) * ringRadius;
+                    const startY = Math.sin(angle) * ringRadius;
+
+                    // 设置粒子扩散速度
+                    const speed = 2 + Math.random() * 4;
+
+                    // 设置粒子生命周期
+                    const life = 0.8 + Math.random() * 1.0;
+
+                    particle.style.left = `${x}px`;
+                    particle.style.top = `${y}px`;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.backgroundColor = color;
+                    particle.style.boxShadow = `0 0 ${size * 2}px ${size}px rgba(${hexToRgb(color)}, 0.6)`;
+
+                    starsContainer.appendChild(particle);
+
+                    // 设置粒子动画
+                    const animation = particle.animate([
+                        {
+                            transform: `translate(${startX}px, ${startY}px)`,
+                            opacity: 1
+                        },
+                        {
+                            transform: `translate(${startX + Math.cos(angle) * speed * 30}px, ${startY + Math.sin(angle) * speed * 30}px)`,
+                            opacity: 0
+                        }
+                    ], {
+                        duration: life * 1000,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    });
+
+                    // 动画结束后移除粒子
+                    animation.onfinish = () => particle.remove();
+                }
+            }
+
+            // 球形爆炸效果
+            function explodeSphere(x, y) {
+                const particleCount = 180 + Math.floor(Math.random() * 120);
+                const color = getRandomColor();
+
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+
+                    // 设置粒子大小
+                    const size = 1 + Math.random() * 3;
+
+                    // 球型分布
+                    const phi = Math.random() * Math.PI * 2;
+                    const theta = Math.random() * Math.PI;
+
+                    const radius = 30 + Math.random() * 20;
+
+                    const startX = Math.sin(theta) * Math.cos(phi) * radius;
+                    const startY = Math.sin(theta) * Math.sin(phi) * radius;
+
+                    // 设置粒子扩散速度
+                    const speed = 2 + Math.random() * 4;
+
+                    // 设置粒子生命周期
+                    const life = 0.7 + Math.random() * 1.0;
+
+                    particle.style.left = `${x}px`;
+                    particle.style.top = `${y}px`;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.backgroundColor = color;
+                    particle.style.boxShadow = `0 0 ${size * 2}px ${size}px rgba(${hexToRgb(color)}, 0.6)`;
+
+                    starsContainer.appendChild(particle);
+
+                    // 设置粒子动画
+                    const animation = particle.animate([
+                        {
+                            transform: `translate(${startX}px, ${startY}px)`,
+                            opacity: 1
+                        },
+                        {
+                            transform: `translate(${startX + Math.sin(theta) * Math.cos(phi) * speed * 30}px, ${startY + Math.sin(theta) * Math.sin(phi) * speed * 30}px)`,
+                            opacity: 0
+                        }
+                    ], {
+                        duration: life * 1000,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    });
+
+                    // 动画结束后移除粒子
+                    animation.onfinish = () => particle.remove();
+                }
+            }
+
+            // 心形爆炸效果
+            function explodeHeart(x, y) {
+                const particleCount = 180 + Math.floor(Math.random() * 120); // 粒子数量
+
+                // 烟花使用心形颜色数组
+                const heartColors = [
+                    '#FF5E5E', // 红色
+                    '#F72585', // 粉色
+                    '#E07A5F', // 橙色
+                    '#FF9B71', // 浅橙色
+                    '#FFD166'  // 黄色
+                ];
+
+                // 为了更好的视觉效果，创建两层不同的粒子
+                for (let layer = 0; layer < 2; layer++) {
+                    const scale = 25 + Math.random() * 15 - (layer * 8); // 缩放比例
+                    const particleOffset = layer * (particleCount / 2);
+
+                    for (let i = 0; i < particleCount / 2; i++) {
+                        const particle = document.createElement('div');
+                        particle.classList.add('particle');
+
+                        // 设置粒子大小，第二层稍大
+                        const size = 1 + Math.random() * 2 + (layer * 0.5);
+
+                        // 设置粒子角度，添加一些随机偏移让心形更自然
+                        const t = ((i + particleOffset) / particleCount) * Math.PI * 2 + (Math.random() * 0.1 - 0.05);
+
+                        // 心形公式
+                        const heartX = scale * 16 * Math.pow(Math.sin(t), 3);
+                        const heartY = -scale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+
+                        // 设置粒子扩散速度，第二层稍快
+                        const speed = 2 + Math.random() * 3 + (layer * 1);
+
+                        // 设置粒子生命周期，第二层稍短
+                        const life = 0.9 + Math.random() * 1.1 - (layer * 0.1);
+
+                        // 设置粒子颜色，随机选择
+                        const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+
+                        particle.style.left = `${x}px`;
+                        particle.style.top = `${y}px`;
+                        particle.style.width = `${size}px`;
+                        particle.style.height = `${size}px`;
+                        particle.style.backgroundColor = color;
+                        particle.style.boxShadow = `0 0 ${size * 2}px ${size}px rgba(${hexToRgb(color)}, 0.6)`;
+
+                        starsContainer.appendChild(particle);
+
+                        // 设置粒子动画 - 从心形位置向外扩散
+                        const animation = particle.animate([
+                            {
+                                transform: `translate(${heartX}px, ${heartY}px)`,
+                                opacity: 1
+                            },
+                            {
+                                transform: `translate(${heartX + heartX * speed * 0.25}px, ${heartY + heartY * speed * 0.25}px)`,
+                                opacity: 0
+                            }
+                        ], {
+                            duration: life * 1000,
+                            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                        });
+
+                        // 动画结束后移除粒子
+                        animation.onfinish = () => particle.remove();
+                    }
+                }
+
+                // 中心位置再添加一个小的爆炸效果
+                setTimeout(() => {
+                    const centerParticleCount = 30 + Math.floor(Math.random() * 20);
+                    const centerColor = '#FFD166'; // 中心使用黄色
+
+                    for (let i = 0; i < centerParticleCount; i++) {
+                        const particle = document.createElement('div');
+                        particle.classList.add('particle');
+
+                        const size = 2 + Math.random() * 3;
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = 1 + Math.random() * 2;
+                        const life = 0.6 + Math.random() * 0.4;
+
+                        particle.style.left = `${x}px`;
+                        particle.style.top = `${y}px`;
+                        particle.style.width = `${size}px`;
+                        particle.style.height = `${size}px`;
+                        particle.style.backgroundColor = centerColor;
+                        particle.style.boxShadow = `0 0 ${size * 3}px ${size}px rgba(${hexToRgb(centerColor)}, 0.8)`;
+
+                        starsContainer.appendChild(particle);
+
+                        const animation = particle.animate([
+                            {
+                                transform: `translate(0, 0)`,
+                                opacity: 1
+                            },
+                            {
+                                transform: `translate(${Math.cos(angle) * speed * 15}px, ${Math.sin(angle) * speed * 15}px)`,
+                                opacity: 0
+                            }
+                        ], {
+                            duration: life * 1000,
+                            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                        });
+
+                        animation.onfinish = () => particle.remove();
+                    }
+                }, 100);
+            }
+
+            // 螺旋爆炸效果
+            function explodeSpiral(x, y) {
+                const particleCount = 160 + Math.floor(Math.random() * 120);
+                const rotations = 3 + Math.random() * 4; // 旋转圈数
+
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+
+                    // 设置粒子大小
+                    const size = 1 + Math.random() * 2;
+
+                    // 螺旋线公式
+                    const angle = (i / particleCount) * Math.PI * 2 * rotations;
+                    const radius = 10 + (i / particleCount) * 40;
+
+                    const spiralX = radius * Math.cos(angle);
+                    const spiralY = radius * Math.sin(angle);
+
+                    // 设置粒子扩散速度
+                    const speed = 2 + Math.random() * 3;
+
+                    // 设置粒子生命周期
+                    const life = 0.7 + Math.random() * 1.0;
+
+                    // 设置粒子颜色
+                    const color = getRandomColor();
+
+                    particle.style.left = `${x}px`;
+                    particle.style.top = `${y}px`;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.backgroundColor = color;
+                    particle.style.boxShadow = `0 0 ${size * 2}px ${size}px rgba(${hexToRgb(color)}, 0.6)`;
+
+                    starsContainer.appendChild(particle);
+
+                    // 设置粒子动画
+                    const animation = particle.animate([
+                        {
+                            transform: `translate(${spiralX}px, ${spiralY}px)`,
+                            opacity: 1
+                        },
+                        {
+                            transform: `translate(${spiralX + Math.cos(angle) * speed * 30}px, ${spiralY + Math.sin(angle) * speed * 30}px)`,
+                            opacity: 0
+                        }
+                    ], {
+                        duration: life * 1000,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    });
+
+                    // 动画结束后移除粒子
+                    animation.onfinish = () => particle.remove();
+                }
+            }
+
+            // 获取随机颜色
+            function getRandomColor() {
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            // 十六进制颜色转换为RGB
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 255, 255';
+            }
+
+            // 窗口大小改变时，重新创建星星
+            window.addEventListener('resize', () => {
+                // 清空所有星星
+                while (starsContainer.firstChild) {
+                    starsContainer.removeChild(starsContainer.firstChild);
+                }
+                createStars();
+            });
+
+            // 点击创建烟花
+            document.addEventListener('click', (e) => {
+                // 点击时创建2-3个烟花
+                const count = 2 + Math.floor(Math.random() * 2);
+                for (let i = 0; i < count; i++) {
+                    setTimeout(() => {
+                        const offsetX = e.clientX + (Math.random() * 60 - 30);
+                        createFirework(offsetX, e.clientY);
+                    }, i * 100);
+                }
+            });
+
+            // 触摸支持，移动设备用
+            document.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // 阻止默认触摸事件
+                const touch = e.touches[0];
+
+                // 触摸时创建2-3个烟花
+                const count = 2 + Math.floor(Math.random() * 2);
+                for (let i = 0; i < count; i++) {
+                    setTimeout(() => {
+                        const offsetX = touch.clientX + (Math.random() * 60 - 30);
+                        createFirework(offsetX, touch.clientY);
+                    }, i * 100);
+                }
+            }, { passive: false });
+
+            // 自动创建烟花
+            function autoCreateFirework() {
+                if (document.hidden) return; // 页面不可见时不创建烟花
+
+                // 每次创建2-3个烟花
+                const count = 2 + Math.floor(Math.random() * 2);
+                for (let i = 0; i < count; i++) {
+                    const x = Math.random() * window.innerWidth;
+                    setTimeout(() => createFirework(x, window.innerHeight), i * 200);
+                }
+
+                // 随机的创建时间间隔，控制频率
+                setTimeout(autoCreateFirework, 400 + Math.random() * 1000);
+            }
+
+            // 开始创建星星
+            createStars();
+
+            // 开始创建流星
+            setTimeout(createMeteor, 1000);
+
+            // 开始自动创建烟花
+            setTimeout(autoCreateFirework, 1000);
+        });
+    </script>
+</body>
+
+</html>

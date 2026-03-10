@@ -1,0 +1,317 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        danger: '#EF4444',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .game-shadow {
+                box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
+            }
+            .btn-hover {
+                @apply transition-all duration-300 transform hover:scale-105;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-light to-blue-50 min-h-screen font-inter text-dark">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- 页面标题 -->
+        <header class="text-center mb-10">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-primary mb-2">
+                <i class="fa fa-gamepad mr-3"></i>猜数字游戏
+            </h1>
+            <p class="text-gray-600 text-lg">我想了一个1到100之间的数字，你能猜出来吗？</p>
+        </header>
+
+        <!-- 游戏主体 -->
+        <main class="bg-white rounded-2xl p-8 game-shadow mb-10">
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- 游戏区域 -->
+                <div class="w-full md:w-2/3">
+                    <div id="game-area" class="space-y-6">
+                        <!-- 猜测输入 -->
+                        <div class="bg-blue-50 rounded-xl p-6">
+                            <h2 class="text-xl font-bold text-primary mb-4">请输入你的猜测</h2>
+                            <div class="flex gap-3">
+                                <input type="number" id="guess-input" min="1" max="100" 
+                                    class="flex-1 px-4 py-3 rounded-lg border border-blue-300 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                    placeholder="输入1-100之间的数字">
+                                <button id="guess-button" 
+                                    class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium btn-hover flex items-center">
+                                    <i class="fa fa-paper-plane mr-2"></i>猜测
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 猜测历史 -->
+                        <div>
+                            <h2 class="text-xl font-bold text-dark mb-4 flex items-center">
+                                <i class="fa fa-history mr-2 text-primary"></i>猜测历史
+                            </h2>
+                            <div id="guess-history" class="bg-gray-50 rounded-xl p-4 max-h-60 overflow-y-auto">
+                                <p class="text-gray-500 italic text-center">还没有猜测记录</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 游戏信息 -->
+                <div class="w-full md:w-1/3 bg-primary/5 rounded-xl p-6">
+                    <h2 class="text-xl font-bold text-primary mb-4 flex items-center">
+                        <i class="fa fa-info-circle mr-2"></i>游戏信息
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">剩余猜测次数:</span>
+                            <span id="remaining-guesses" class="font-bold text-primary text-xl">10</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">当前猜测:</span>
+                            <span id="current-guess" class="font-bold text-dark text-xl">-</span>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg p-4 border border-primary/20">
+                            <h3 class="font-bold text-primary mb-2">提示</h3>
+                            <p id="hint" class="text-gray-600 italic">开始猜测吧！</p>
+                        </div>
+                        
+                        <button id="restart-button" 
+                            class="w-full bg-secondary hover:bg-secondary/90 text-white py-3 rounded-lg font-medium btn-hover flex items-center justify-center mt-4">
+                            <i class="fa fa-refresh mr-2"></i>重新开始
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 游戏结果弹窗 -->
+        <div id="result-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+                <div id="success-modal" class="hidden text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-500 mb-4">
+                        <i class="fa fa-trophy text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-green-500 mb-2">恭喜你！</h2>
+                    <p class="text-gray-600 mb-6">你猜对了，答案就是 <span id="correct-number" class="font-bold"></span></p>
+                    <button id="play-again-button" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium btn-hover">
+                        再玩一次
+                    </button>
+                </div>
+                
+                <div id="failure-modal" class="hidden text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+                        <i class="fa fa-times-circle text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-red-500 mb-2">游戏结束</h2>
+                    <p class="text-gray-600 mb-6">你已经用完了所有猜测机会，正确答案是 <span id="answer-number" class="font-bold"></span></p>
+                    <button id="try-again-button" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium btn-hover">
+                        再试一次
+                    </button>
+                </div>
+            </div>
+        </div>
+
+          <!-- 页脚 -->
+			  <footer class="py-2 border-t border-gray-100">
+			    <div class="container mx-auto px-4">
+			      <a href="https://beian.miit.gov.cn/">
+			        <p class="text-center text-gray-500 text-xs transition-colors hover:text-primary">
+			          Fixput &copy; 2025 京ICP备2024055092号-2
+			        </p>
+			      </a>
+			    </div>
+			  </footer>
+    </div>
+
+    <script>
+        // 游戏变量
+        let secretNumber = Math.floor(Math.random() * 100) + 1;
+        let remainingGuesses = 10;
+        let gameOver = false;
+        let guesses = [];
+
+        // DOM 元素
+        const guessInput = document.getElementById('guess-input');
+        const guessButton = document.getElementById('guess-button');
+        const restartButton = document.getElementById('restart-button');
+        const remainingGuessesElement = document.getElementById('remaining-guesses');
+        const currentGuessElement = document.getElementById('current-guess');
+        const hintElement = document.getElementById('hint');
+        const guessHistoryElement = document.getElementById('guess-history');
+        const resultModal = document.getElementById('result-modal');
+        const successModal = document.getElementById('success-modal');
+        const failureModal = document.getElementById('failure-modal');
+        const correctNumberElement = document.getElementById('correct-number');
+        const answerNumberElement = document.getElementById('answer-number');
+        const playAgainButton = document.getElementById('play-again-button');
+        const tryAgainButton = document.getElementById('try-again-button');
+
+        // 初始化游戏
+        function initGame() {
+            secretNumber = Math.floor(Math.random() * 100) + 1;
+            remainingGuesses = 10;
+            gameOver = false;
+            guesses = [];
+            
+            remainingGuessesElement.textContent = remainingGuesses;
+            currentGuessElement.textContent = '-';
+            hintElement.textContent = '开始猜测吧！';
+            guessHistoryElement.innerHTML = '<p class="text-gray-500 italic text-center">还没有猜测记录</p>';
+            
+            guessInput.disabled = false;
+            guessButton.disabled = false;
+            guessInput.value = '';
+            
+            resultModal.classList.add('hidden');
+            successModal.classList.add('hidden');
+            failureModal.classList.add('hidden');
+        }
+
+        // 检查猜测
+        function checkGuess() {
+            if (gameOver) return;
+            
+            const guess = parseInt(guessInput.value);
+            
+            // 验证输入
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                hintElement.textContent = '请输入1-100之间的有效数字！';
+                hintElement.classList.add('text-danger');
+                setTimeout(() => {
+                    hintElement.classList.remove('text-danger');
+                }, 2000);
+                return;
+            }
+            
+            // 更新猜测历史
+            guesses.push(guess);
+            updateGuessHistory(guess);
+            
+            // 更新当前猜测
+            currentGuessElement.textContent = guess;
+            
+            // 减少剩余猜测次数
+            remainingGuesses--;
+            remainingGuessesElement.textContent = remainingGuesses;
+            
+            // 检查猜测结果
+            if (guess === secretNumber) {
+                // 猜对了
+                gameOver = true;
+                correctNumberElement.textContent = secretNumber;
+                successModal.classList.remove('hidden');
+                resultModal.classList.remove('hidden');
+                hintElement.textContent = '恭喜你，猜对了！';
+                hintElement.classList.add('text-secondary');
+                guessInput.disabled = true;
+                guessButton.disabled = true;
+            } else if (remainingGuesses === 0) {
+                // 游戏结束，用完了所有猜测机会
+                gameOver = true;
+                answerNumberElement.textContent = secretNumber;
+                failureModal.classList.remove('hidden');
+                resultModal.classList.remove('hidden');
+                hintElement.textContent = '游戏结束，你用完了所有猜测机会。';
+                hintElement.classList.add('text-danger');
+                guessInput.disabled = true;
+                guessButton.disabled = true;
+            } else if (guess < secretNumber) {
+                // 猜的数字太小
+                hintElement.textContent = '太小了！再大一点。';
+                hintElement.classList.add('text-accent');
+                setTimeout(() => {
+                    hintElement.classList.remove('text-accent');
+                }, 2000);
+            } else {
+                // 猜的数字太大
+                hintElement.textContent = '太大了！再小一点。';
+                hintElement.classList.add('text-accent');
+                setTimeout(() => {
+                    hintElement.classList.remove('text-accent');
+                }, 2000);
+            }
+            
+            // 清空输入框
+            guessInput.value = '';
+            guessInput.focus();
+        }
+
+        // 更新猜测历史
+        function updateGuessHistory(guess) {
+            const isCorrect = guess === secretNumber;
+            const isHigher = guess > secretNumber;
+            
+            let className = 'text-gray-700';
+            let icon = '';
+            
+            if (isCorrect) {
+                className = 'text-secondary font-bold';
+                icon = '<i class="fa fa-check-circle ml-2"></i>';
+            } else if (remainingGuesses > 0) {
+                className = isHigher ? 'text-danger' : 'text-primary';
+                icon = isHigher ? '<i class="fa fa-arrow-down ml-2"></i>' : '<i class="fa fa-arrow-up ml-2"></i>';
+            }
+            
+            const guessItem = document.createElement('div');
+            guessItem.className = `flex justify-between items-center py-2 px-3 rounded ${isCorrect ? 'bg-green-50' : (remainingGuesses > 0 ? (isHigher ? 'bg-red-50' : 'bg-blue-50') : 'bg-gray-100')}`;
+            guessItem.innerHTML = `
+                <span class="font-medium">猜测 #${guesses.length}</span>
+                <span class="${className}">${guess} ${icon}</span>
+            `;
+            
+            if (guessHistoryElement.querySelector('p.italic')) {
+                guessHistoryElement.innerHTML = '';
+            }
+            
+            guessHistoryElement.appendChild(guessItem);
+            guessHistoryElement.scrollTop = guessHistoryElement.scrollHeight;
+        }
+
+        // 事件监听
+        guessButton.addEventListener('click', checkGuess);
+        
+        guessInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkGuess();
+            }
+        });
+        
+        restartButton.addEventListener('click', initGame);
+        playAgainButton.addEventListener('click', initGame);
+        tryAgainButton.addEventListener('click', initGame);
+
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>
+    

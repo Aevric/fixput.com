@@ -1,0 +1,466 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星空烟花秀</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script>
+        // 防止iOS上的橡皮筋效果
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, {passive: false});
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-primary m-0 p-0 overflow-hidden">
+    <canvas id="canvas" class="fixed top-0 left-0 w-full h-full z-0"></canvas>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化画布
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 设置画布尺寸为窗口大小
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            // 初始化时调整画布大小，并监听窗口大小变化
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 粒子类 - 烟花爆炸后的粒子
+            class Particle {
+                constructor(x, y, color, angle, speed, isStar = false, patternIndex = 0) {
+                    this.x = x;
+                    this.y = y;
+                    this.color = color;
+                    this.angle = angle;
+                    this.speed = speed;
+                    this.radius = Math.random() * 1.5 + 1;
+                    this.opacity = 1;
+                    this.gravity = 0.05;
+                    this.friction = 0.98;
+                    this.isStar = isStar;
+                    this.life = Math.random() * 50 + 40;
+                    this.initialLife = this.life;
+                    this.patternIndex = patternIndex;
+                    
+                    // 计算速度分量
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+                }
+                
+                update() {
+                    this.vx *= this.friction;
+                    this.vy *= this.friction;
+                    this.vy += this.gravity;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.life--;
+                    this.opacity = this.life / this.initialLife;
+                }
+                
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillStyle = this.color;
+                    
+                    if (this.isStar) {
+                        this.drawStar(this.x, this.y, 5, this.radius, this.radius * 2);
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    ctx.restore();
+                }
+                
+                drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+                    let rot = Math.PI / 2 * 3;
+                    let x = cx;
+                    let y = cy;
+                    let step = Math.PI / spikes;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy - outerRadius);
+                    
+                    for (let i = 0; i < spikes; i++) {
+                        x = cx + Math.cos(rot) * outerRadius;
+                        y = cy + Math.sin(rot) * outerRadius;
+                        ctx.lineTo(x, y);
+                        rot += step;
+                        
+                        x = cx + Math.cos(rot) * innerRadius;
+                        y = cy + Math.sin(rot) * innerRadius;
+                        ctx.lineTo(x, y);
+                        rot += step;
+                    }
+                    
+                    ctx.lineTo(cx, cy - outerRadius);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            
+            // 烟花类
+            class Firework {
+                constructor(x, y, targetX, targetY, patternType = null) {
+                    this.x = x;
+                    this.y = y;
+                    this.targetX = targetX;
+                    this.targetY = targetY;
+                    this.radius = 3;
+                    this.speed = Math.random() * 2 + 4;
+                    
+                    const angle = Math.atan2(targetY - y, targetX - x);
+                    this.vx = Math.cos(angle) * this.speed;
+                    this.vy = Math.sin(angle) * this.speed;
+                    
+                    this.hue = Math.floor(Math.random() * 360);
+                    this.useGradient = Math.random() > 0.5;
+                    
+                    this.particleCount = Math.floor(Math.random() * 80) + 120;
+                    this.particleSpeed = 3 + Math.random();
+                    
+                    this.effectType = Math.floor(Math.random() * 3);
+                    this.patternType = patternType || Math.floor(Math.random() * 4);
+                    
+                    this.exploded = false;
+                    this.trail = [];
+                    this.trailLength = 10;
+                }
+                
+                update() {
+                    this.trail.push({x: this.x, y: this.y});
+                    if (this.trail.length > this.trailLength) {
+                        this.trail.shift();
+                    }
+                    
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    
+                    const distance = Math.hypot(this.targetX - this.x, this.targetY - this.y);
+                    if (distance < this.speed) {
+                        this.exploded = true;
+                    }
+                }
+                
+                draw() {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const point = this.trail[i];
+                        const opacity = 1 - (i / this.trail.length);
+                        ctx.strokeStyle = `hsla(${this.hue}, 100%, 70%, ${opacity})`;
+                        ctx.lineTo(point.x, point.y);
+                    }
+                    
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.useGradient ? 
+                        this.getGradientColor() : 
+                        `hsl(${this.hue}, 100%, 70%)`;
+                    ctx.fill();
+                }
+                
+                getGradientColor() {
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, this.radius
+                    );
+                    gradient.addColorStop(0, `hsl(${this.hue}, 100%, 90%)`);
+                    gradient.addColorStop(1, `hsl(${this.hue}, 100%, 50%)`);
+                    return gradient;
+                }
+                
+                explode() {
+                    const particles = [];
+                    
+                    switch(this.patternType) {
+                        case 0: // 圆形
+                            for (let i = 0; i < this.particleCount; i++) {
+                                const angle = (i / this.particleCount) * Math.PI * 2;
+                                const speed = this.particleSpeed;
+                                
+                                const isStar = this.effectType === 1 || (this.effectType === 2 && i % 2 === 0);
+                                const hueVariation = this.hue + (Math.random() * 20 - 10);
+                                
+                                const color = this.useGradient ? 
+                                    this.getParticleGradientColor(hueVariation) : 
+                                    `hsl(${hueVariation}, 100%, ${60 + Math.random() * 20}%)`;
+                                
+                                particles.push(new Particle(this.x, this.y, color, angle, speed, isStar, i));
+                            }
+                            break;
+                            
+                        case 1: // 星形
+                            const arms = 6;
+                            for (let i = 0; i < this.particleCount; i++) {
+                                const armIndex = i % arms;
+                                const segment = Math.floor(i / arms);
+                                const angle = (armIndex / arms) * Math.PI * 2 + 
+                                              (segment / (this.particleCount / arms)) * (Math.PI / arms);
+                                const speed = this.particleSpeed * (0.8 + Math.random() * 0.4);
+                                
+                                const isStar = this.effectType === 1 || (this.effectType === 2 && armIndex % 2 === 0);
+                                const hueVariation = this.hue + (armIndex * 360 / arms);
+                                
+                                const color = this.useGradient ? 
+                                    this.getParticleGradientColor(hueVariation) : 
+                                    `hsl(${hueVariation}, 100%, ${60 + Math.random() * 20}%)`;
+                                
+                                particles.push(new Particle(this.x, this.y, color, angle, speed, isStar, i));
+                            }
+                            break;
+                            
+                        case 2: // 螺旋
+                            for (let i = 0; i < this.particleCount; i++) {
+                                const angle = (i / 10) + (i / this.particleCount) * Math.PI * 10;
+                                const distance = (i / this.particleCount) * 10;
+                                const speed = this.particleSpeed * distance;
+                                
+                                const isStar = this.effectType === 1 || (this.effectType === 2 && i % 5 === 0);
+                                const hueVariation = this.hue + (i / this.particleCount) * 180;
+                                
+                                const color = this.useGradient ? 
+                                    this.getParticleGradientColor(hueVariation) : 
+                                    `hsl(${hueVariation}, 100%, ${60 + Math.random() * 20}%)`;
+                                
+                                particles.push(new Particle(this.x, this.y, color, angle, speed, isStar, i));
+                            }
+                            break;
+                            
+                        case 3: // 网格
+                            const gridSize = Math.ceil(Math.sqrt(this.particleCount));
+                            for (let i = 0; i < this.particleCount; i++) {
+                                const row = Math.floor(i / gridSize);
+                                const col = i % gridSize;
+                                
+                                const centerX = gridSize / 2;
+                                const centerY = gridSize / 2;
+                                const angle = Math.atan2(row - centerY, col - centerX);
+                                const distance = Math.hypot(row - centerY, col - centerX) / (gridSize / 2);
+                                const speed = this.particleSpeed * distance * 0.8;
+                                
+                                const isStar = this.effectType === 1 || (this.effectType === 2 && (row + col) % 2 === 0);
+                                const hueVariation = this.hue + (distance * 100);
+                                
+                                const color = this.useGradient ? 
+                                    this.getParticleGradientColor(hueVariation) : 
+                                    `hsl(${hueVariation}, 100%, ${60 + Math.random() * 20}%)`;
+                                
+                                particles.push(new Particle(this.x, this.y, color, angle, speed, isStar, i));
+                            }
+                            break;
+                    }
+                    
+                    return particles;
+                }
+                
+                getParticleGradientColor(hue) {
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, 10
+                    );
+                    gradient.addColorStop(0, `hsl(${hue}, 100%, 90%)`);
+                    gradient.addColorStop(1, `hsl(${hue}, 100%, 50%)`);
+                    return gradient;
+                }
+            }
+            
+            // 星星类 - 背景中的星星
+            class Star {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.radius = Math.random() * 1 + 0.5;
+                    this.opacity = 0.5 + Math.random() * 0.5;
+                    this.speed = 0.005 + Math.random() * 0.005;
+                    this.twinkleSpeed = 0.01 + Math.random() * 0.01;
+                    this.baseOpacity = this.opacity;
+                }
+                
+                update() {
+                    this.opacity = this.baseOpacity + Math.sin(Date.now() * this.twinkleSpeed) * 0.2;
+                    this.y += this.speed;
+                    if (this.y > canvas.height) {
+                        this.y = 0;
+                        this.x = Math.random() * canvas.width;
+                    }
+                }
+                
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+            
+            // 创建星空背景
+            const stars = [];
+            for (let i = 0; i < 200; i++) {
+                stars.push(new Star());
+            }
+            
+            // 存储烟花和粒子
+            let fireworks = [];
+            let particles = [];
+            
+            // 动画控制
+            let animationId;
+            let isAnimating = false;
+            let autoFireworks = true;
+            let lastAutoFireworkTime = 0;
+            const autoFireworkInterval = 2000;
+            const maxFireworks = 3;
+            
+            // 动画循环
+            function animate(timestamp) {
+                if (!isAnimating) return;
+                
+                animationId = requestAnimationFrame(animate);
+                
+                ctx.fillStyle = 'rgba(17, 24, 39, 0.25)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制星空背景
+                stars.forEach(star => {
+                    star.update();
+                    star.draw();
+                });
+                
+                // 自动发射烟花
+                if (autoFireworks && timestamp - lastAutoFireworkTime > autoFireworkInterval && 
+                    fireworks.length < maxFireworks) {
+                    const patternType = Math.floor(lastAutoFireworkTime / 6000) % 4;
+                    launchRandomFirework(patternType);
+                    lastAutoFireworkTime = timestamp;
+                }
+                
+                // 更新和绘制烟花
+                for (let i = fireworks.length - 1; i >= 0; i--) {
+                    const firework = fireworks[i];
+                    firework.update();
+                    firework.draw();
+                    
+                    if (firework.exploded) {
+                        const newParticles = firework.explode();
+                        particles = [...particles, ...newParticles];
+                        fireworks.splice(i, 1);
+                    }
+                }
+                
+                // 更新和绘制粒子
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const particle = particles[i];
+                    particle.update();
+                    
+                    if (particle.life <= 0 || particle.opacity <= 0) {
+                        particles.splice(i, 1);
+                    } else {
+                        particle.draw();
+                    }
+                }
+            }
+            
+            // 从底部随机位置发射烟花
+            function launchRandomFirework(patternType = null) {
+                // 确保烟花发射位置在可见区域内
+                const padding = 50; // 边距
+                const startX = padding + Math.random() * (canvas.width - 2 * padding);
+                const startY = canvas.height;
+                
+                // 确保目标位置在可见区域内
+                const targetPadding = 100;
+                const targetX = targetPadding + Math.random() * (canvas.width - 2 * targetPadding);
+                const targetY = targetPadding + Math.random() * (canvas.height * 0.5 - targetPadding);
+                
+                fireworks.push(new Firework(startX, startY, targetX, targetY, patternType));
+            }
+            
+            // 在指定位置发射烟花
+            function launchFireworkAt(x, y) {
+                if (fireworks.length >= maxFireworks) return;
+                
+                // 确保烟花发射位置在可见区域内
+                const padding = 50;
+                const startX = padding + Math.random() * (canvas.width - 2 * padding);
+                const startY = canvas.height;
+                
+                const firework = new Firework(startX, startY, x, y);
+                firework.particleCount = Math.floor(Math.random() * 100) + 180;
+                firework.patternType = Math.floor(Math.random() * 4);
+                fireworks.push(firework);
+            }
+            
+            // 开始动画
+            function startAnimation() {
+                if (!isAnimating) {
+                    isAnimating = true;
+                    animate(0);
+                }
+            }
+            
+            // 事件监听
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                launchFireworkAt(x, y);
+            });
+            
+            // 移动端触摸支持
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                
+                launchFireworkAt(x, y);
+            }, {passive: false});
+            
+            // 键盘控制
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    if (fireworks.length < maxFireworks) {
+                        launchRandomFirework();
+                    }
+                }
+            });
+            
+            // 自动开始动画
+            setTimeout(() => {
+                startAnimation();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

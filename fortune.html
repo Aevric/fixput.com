@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>好运抽签</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#333',
+                        secondary: '#666',
+                        light: '#f5f5f5',
+                        dark: '#1a1a1a',
+                    },
+                    fontFamily: {
+                        serif: ['Noto Serif SC', 'serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-texture {
+                background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23999' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+            }
+        }
+    </style>
+</head>
+<body class="bg-light bg-texture min-h-screen flex flex-col items-center justify-center p-4 text-primary">
+    <div class="w-full max-w-3xl flex flex-col items-center justify-center h-full">
+        <!-- 标题 -->
+        <header class="mb-8 text-center">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-serif font-bold text-dark tracking-wide">好运抽签</h1>
+            <p class="text-secondary mt-2 text-[clamp(1rem,2vw,1.2rem)]">点击按钮抽取属于你的祝福</p>
+        </header>
+        
+        <!-- 签文容器 -->
+        <div id="fortune-container" class="w-full bg-white rounded-lg shadow-lg p-8 border border-gray-200 transition-all duration-300 hover:shadow-xl">
+            <div class="flex flex-col items-center justify-center min-h-[300px]">
+                <div id="fortune-text" class="text-[clamp(1.2rem,3vw,1.8rem)] font-serif text-center leading-relaxed mb-6">
+                    加载签文数据中...
+                </div>
+                <div class="w-20 h-1 bg-gray-300 my-4"></div>
+                <div id="fortune-meaning" class="text-secondary text-[clamp(1rem,2vw,1.2rem)] text-center leading-relaxed">
+                    请稍候
+                </div>
+            </div>
+        </div>
+        
+        <!-- 抽签按钮 -->
+        <button id="draw-btn" class="mt-10 bg-dark text-white px-8 py-3 rounded-full text-lg font-medium transition-all duration-300 hover:bg-gray-700 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50" disabled>
+            <i class="fa fa-random mr-2"></i>抽取好运
+        </button>
+        
+        <!-- 页脚 -->
+        <footer class="mt-auto pt-8 text-center text-gray-500 text-sm">
+            <p>愿好运常伴你左右</p>
+        </footer>
+    </div>
+
+    <script>
+        // 存储签文数据
+        let fortunes = [];
+        
+        // DOM元素
+        const [drawBtn, fortuneText, fortuneMeaning, fortuneContainer] = 
+            ['draw-btn', 'fortune-text', 'fortune-meaning', 'fortune-container']
+            .map(id => document.getElementById(id));
+
+        // 从JSON文件加载签文数据
+        async function loadFortunes() {
+            try {
+                // 加载外部JSON文件（这里假设文件名为fortunes.txt）
+                const response = await fetch('fortunes.txt');
+                
+                if (!response.ok) {
+                    throw new Error('无法加载签文数据');
+                }
+                
+                // 解析JSON数据
+                const data = await response.text();
+                fortunes = JSON.parse(data);
+                
+                // 加载成功后更新初始显示并启用按钮
+                fortuneText.textContent = "点击下方按钮，抽取你的好运签";
+                fortuneMeaning.textContent = "每一次抽签，都是一份美好的期待";
+                drawBtn.disabled = false;
+            } catch (error) {
+                // 处理加载错误
+                fortuneText.textContent = "数据加载失败";
+                fortuneMeaning.textContent = "请检查文件是否存在或格式是否正确";
+                console.error('加载签文数据时出错:', error);
+            }
+        }
+
+        // 抽签函数
+        function drawFortune() {
+            if (fortunes.length === 0) return;
+            
+            const {text, meaning} = fortunes[Math.floor(Math.random() * fortunes.length)];
+            fortuneText.textContent = text;
+            fortuneMeaning.textContent = meaning;
+            
+            // 轻微样式反馈
+            fortuneContainer.classList.add('bg-gray-50');
+            setTimeout(() => fortuneContainer.classList.remove('bg-gray-50'), 300);
+        }
+
+        // 页面加载时加载签文数据
+        window.addEventListener('DOMContentLoaded', loadFortunes);
+        
+        // 事件监听
+        drawBtn.addEventListener('click', drawFortune);
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' && !drawBtn.disabled) {
+                e.preventDefault();
+                drawFortune();
+            }
+        });
+    </script>
+</body>
+</html>
